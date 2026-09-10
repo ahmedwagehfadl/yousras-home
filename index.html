@@ -693,6 +693,8 @@
     .trend-value { font-size: 0.65rem; color: #6f6560; font-weight: 900; text-align: left; direction: ltr; white-space: nowrap; }
     .daily-chart-wrap { width: 100%; overflow: hidden; border-radius: 12px; background: #fcfbfa; border: 1px solid #f0ece9; padding: 7px; }
     .daily-chart-wrap svg { width: 100%; height: auto; display: block; }
+    .day-spend-popup { position: fixed; background: #fff; border: 1px solid #e8deda; border-radius: 10px; padding: 8px 14px; font-size: 0.85rem; color: #2d2d2d; box-shadow: 0 4px 16px rgba(0,0,0,0.12); pointer-events: none; z-index: 9999; white-space: nowrap; transform: translate(-50%, -110%); }
+    .day-spend-popup strong { color: #b5726a; }
     .chart-empty { text-align: center; color: #c5bdb8; font-size: 0.76rem; padding: 18px 8px; }
     .analytics-footnote { font-size: 0.61rem; color: #b3aaa5; line-height: 1.5; margin-top: 8px; }
     .expense-form .amount-input { direction: ltr; text-align: center; }
@@ -2430,6 +2432,23 @@ function renderMonthlyTrendChart(currentCycle) {
     </div>`).join('');
 }
 
+let _dayPopupTimer = null;
+window.showDaySpendPopup = function(e, label, value) {
+  document.querySelectorAll('.day-spend-popup').forEach(el => el.remove());
+  const popup = document.createElement('div');
+  popup.className = 'day-spend-popup';
+  popup.innerHTML = `${label}<br><strong>${value}</strong>`;
+  const rect = e.target.closest('svg').getBoundingClientRect();
+  const cx = e.clientX, cy = e.clientY;
+  popup.style.left = cx + 'px';
+  popup.style.top  = cy + 'px';
+  document.body.appendChild(popup);
+  clearTimeout(_dayPopupTimer);
+  _dayPopupTimer = setTimeout(() => popup.remove(), 2500);
+  e.stopPropagation();
+};
+document.addEventListener('click', () => document.querySelectorAll('.day-spend-popup').forEach(el => el.remove()));
+
 function renderDailySpendChart(current, cycle) {
   const el = document.getElementById('dailySpendChart');
   if (!el) return;
@@ -2456,19 +2475,25 @@ function renderDailySpendChart(current, cycle) {
     return { ...p, x, y };
   });
   const polyline = xy.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const circles = xy.filter(p => p.value > 0).map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="#b5726a"><title>${esc(shortDayLabel(p.date))}: ${esc(formatMoney(p.value))}</title></circle>`).join('');
+  const circles = xy.filter(p => p.value > 0).map(p =>
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#b5726a" fill-opacity="0.15" stroke="#b5726a" stroke-width="2" style="cursor:pointer" onclick="showDaySpendPopup(event,'${esc(shortDayLabel(p.date))}','${esc(formatMoney(p.value))}')"><title>${esc(shortDayLabel(p.date))}: ${esc(formatMoney(p.value))}</title></circle>`
+  ).join('');
+  const midValue = maxValue / 2;
+  const yMid = top + chartH / 2;
   const first = points[0]?.date || cycle.start;
   const last = points[points.length - 1]?.date || cycle.start;
   el.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="رسم الصرف اليومي للدورة الحالية">
       <line x1="${left}" y1="${top + chartH}" x2="${W-right}" y2="${top + chartH}" stroke="#e6dfda" stroke-width="1" />
       <line x1="${left}" y1="${top}" x2="${left}" y2="${top + chartH}" stroke="#eee7e2" stroke-width="1" />
-      <line x1="${left}" y1="${top + chartH/2}" x2="${W-right}" y2="${top + chartH/2}" stroke="#f0ebe7" stroke-width="1" stroke-dasharray="4 5" />
-      <polyline points="${polyline}" fill="none" stroke="#b5726a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <line x1="${left}" y1="${yMid}" x2="${W-right}" y2="${yMid}" stroke="#f0ebe7" stroke-width="1" stroke-dasharray="4 5" />
+      <polyline points="${polyline}" fill="none" stroke="#b5726a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
       ${circles}
-      <text x="${left}" y="13" font-size="11" fill="#9f9691">${esc(formatMoney(maxValue))}</text>
-      <text x="${left}" y="174" font-size="11" fill="#a9a09b">${esc(shortDayLabel(first))}</text>
-      <text x="${W-right}" y="174" text-anchor="end" font-size="11" fill="#a9a09b">${esc(shortDayLabel(last))}</text>
+      <text x="${left - 4}" y="${top + 4}" font-size="10" fill="#9f9691" text-anchor="end">${esc(formatMoney(maxValue))}</text>
+      <text x="${left - 4}" y="${yMid + 4}" font-size="10" fill="#b8b0ab" text-anchor="end">${esc(formatMoney(midValue))}</text>
+      <text x="${left - 4}" y="${top + chartH}" font-size="10" fill="#c8c0bb" text-anchor="end">0</text>
+      <text x="${left}" y="${H - 2}" font-size="10" fill="#a9a09b">${esc(shortDayLabel(first))}</text>
+      <text x="${W-right}" y="${H - 2}" text-anchor="end" font-size="10" fill="#a9a09b">${esc(shortDayLabel(last))}</text>
     </svg>`;
 }
 
