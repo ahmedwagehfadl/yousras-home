@@ -1508,8 +1508,6 @@
         <div class="uname">Ahmed</div>
         <div class="ulabel">أحمد</div>
       </button>
-      <!-- TEMP: reset ahmed password — remove after use -->
-      <button id="btnResetAhmed" onclick="resetAhmedPass()" style="display:block;margin:8px auto 0;font-size:0.72rem;color:#b5726a;background:none;border:none;cursor:pointer;text-decoration:underline;">🔑 نسيت باسورد أحمد؟</button>
     </div>
 
     <div class="pass-section">
@@ -3440,19 +3438,6 @@ async function setRemoteHash(user, hash) {
   const fdb  = getFirestore(app);
   await setDoc(doc(fdb, 'passwords', user), { hash, _s: APP_SECRET });
 }
-
-// TEMP: reset ahmed password — remove after use
-window.resetAhmedPass = async function() {
-  if (!confirm('هتمسح باسورد أحمد وهيحتاج يعمل باسورد جديد. تمام؟')) return;
-  try {
-    const app = initializeApp(FIREBASE_CONFIG, 'yh-pass-reset-ahmed');
-    const fdb  = getFirestore(app);
-    await deleteDoc(doc(fdb, 'passwords', 'ahmed'));
-    alert('تم! دلوقتي اختار أحمد وادخل باسورد جديد.');
-  } catch(e) {
-    alert('حصل خطأ: ' + e.message);
-  }
-};
 
 // ── Login logic ───────────────────────────────────────────────────────────────
 window.selectUser = function(u) {
