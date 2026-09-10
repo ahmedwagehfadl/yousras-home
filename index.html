@@ -2475,9 +2475,12 @@ function renderDailySpendChart(current, cycle) {
     return { ...p, x, y };
   });
   const polyline = xy.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const circles = xy.filter(p => p.value > 0).map(p =>
-    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#b5726a" fill-opacity="0.15" stroke="#b5726a" stroke-width="2" style="cursor:pointer" onclick="showDaySpendPopup(event,'${esc(shortDayLabel(p.date))}','${esc(formatMoney(p.value))}')"><title>${esc(shortDayLabel(p.date))}: ${esc(formatMoney(p.value))}</title></circle>`
-  ).join('');
+  const circles = xy.filter(p => p.value > 0).map(p => {
+    const cx = p.x.toFixed(1), cy = p.y.toFixed(1);
+    const lbl = esc(shortDayLabel(p.date)), val = esc(formatMoney(p.value));
+    return `<circle cx="${cx}" cy="${cy}" r="4" fill="#b5726a" stroke="#fff" stroke-width="1.5" pointer-events="none"/>` +
+           `<circle cx="${cx}" cy="${cy}" r="18" fill="transparent" style="cursor:pointer" onclick="showDaySpendPopup(event,'${lbl}','${val}')"><title>${lbl}: ${val}</title></circle>`;
+  }).join('');
   const midValue = maxValue / 2;
   const yMid = top + chartH / 2;
   const first = points[0]?.date || cycle.start;
