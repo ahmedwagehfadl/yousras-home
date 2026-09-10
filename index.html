@@ -4046,6 +4046,8 @@ window.addChild = async function(type, parentId) {
   const el = document.getElementById(childInputId(type, parentId));
   const txt = el?.value.trim();
   if (!txt) return;
+  const anchorEl = document.getElementById(childFormId(type, parentId));
+  const anchorY  = anchorEl ? anchorEl.getBoundingClientRect().top + window.scrollY : null;
   const ref = await addDoc(collection(db,'child_items'), sw({
     parentType: type, parentId, text: txt, done: false, ts: Date.now(), by: currentUser,
     sortOrder: nextChildSortOrder(type, parentId), ...reminderFields(txt)
@@ -4054,8 +4056,18 @@ window.addChild = async function(type, parentId) {
   showUndoToast('اتضاف العنصر الفرعي', txt, async () => { await deleteDoc(doc(db,'child_items',ref.id)); });
   el.value = '';
   expandedChildren.add(key);
-  openChildComposers.delete(key);
-  document.getElementById(childFormId(type, parentId))?.classList.remove('show');
+  openChildComposers.add(key);
+  // after onSnapshot re-renders, scroll back to the child form and re-focus input
+  setTimeout(() => {
+    const form = document.getElementById(childFormId(type, parentId));
+    if (form) {
+      form.classList.add('show');
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(childInputId(type, parentId))?.focus();
+    } else if (anchorY !== null) {
+      window.scrollTo({ top: anchorY - window.innerHeight * 0.4, behavior: 'smooth' });
+    }
+  }, 120);
 };
 
 async function restoreParentForChild(child) {
@@ -4187,10 +4199,12 @@ function completedChildrenFor(type, visibleParents) {
 }
 
 function renderAllLists() {
+  const savedY = window.scrollY;
   renderShopping(shoppingItems);
   renderTasks(taskItems);
   renderRoutine();
   renderUpcomingEvents();
+  window.scrollTo({ top: savedY, behavior: 'instant' });
 }
 
 // ── SHOPPING ──────────────────────────────────────────────────────────────────
